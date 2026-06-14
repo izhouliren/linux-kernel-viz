@@ -245,9 +245,13 @@ function renderChart(version, data, total) {
     }
   }
 
-  const names = displayData.map(d => d.contributor)
-  const values = displayData.map(d => d.value)
-  const percentages = displayData.map(d => ((d.value / total) * 100).toFixed(2))
+  // 重要: ECharts yAxis 类目轴默认从下往上加, 第一个类目在底部
+  // 所以 yAxis.data 必须是 reverse 后的, 顶部 bar (displayData[0]) 才是第一名
+  // 同样 series.data 也 reverse
+  // 接下来 tooltip 用 dataIndex, 要用 reverse 后的数组作为查表依据
+  const visNames = displayData.map(d => d.contributor).reverse()  // yAxis 顺序
+  const visValues = displayData.map(d => d.value).reverse()       // yAxis 顺序
+  const visPcts = displayData.map(d => ((d.value / total) * 100).toFixed(2)).reverse()
 
   // ---- 行间距固定: 类别间距为 30%, 加上 barWidth 14px, 每行约 30-35px ----
   // 原本不固定, 不同类别数下 ECharts 自适应间距, 看起来不一
@@ -259,6 +263,7 @@ function renderChart(version, data, total) {
   const labelFontSize = displayData.length > 100 ? 10 : displayData.length > 50 ? 11 : 12
 
   // 颜色: "Other" 用暗绿, 主营用亮绿渐变
+  // colors 也需与 visValues 顺序一致 (reverse 后, 顶部 = 原第一名)
   const colors = displayData.map((d) => {
     if (d.contributor.startsWith('Other')) {
       return new echarts.graphic.LinearGradient(0, 0, 1, 0, [
@@ -270,7 +275,7 @@ function renderChart(version, data, total) {
       { offset: 0, color: '#00ff41' },
       { offset: 1, color: '#00aa30' },
     ])
-  })
+  }).reverse()
 
   const titleText = showHint
     ? `${version} (Top ${data.length}, ${minorCount} 家贡献为 1 的厂商合并为 Other)`
@@ -302,9 +307,10 @@ function renderChart(version, data, total) {
       formatter(params) {
         const p = params[0]
         const idx = p.dataIndex
-        return `> <strong style="color:#00ff41">${names[idx]}</strong><br/>` +
-               `  commits: <strong>${values[idx].toLocaleString()}</strong><br/>` +
-               `  share: <strong>${percentages[idx]}%</strong>`
+        // 用 visNames/visValues 查表, idx 是 yAxis 顺序的索引
+        return `> <strong style="color:#00ff41">${visNames[idx]}</strong><br/>` +
+               `  commits: <strong>${visValues[idx].toLocaleString()}</strong><br/>` +
+               `  share: <strong>${visPcts[idx]}%</strong>`
       },
     },
     grid: {
@@ -324,7 +330,7 @@ function renderChart(version, data, total) {
     },
     yAxis: {
       type: 'category',
-      data: [...names].reverse(),
+      data: visNames,  // 已 reverse, 第一个名字在 y 轴底部
       axisLabel: {
         fontSize: labelFontSize,
         fontWeight: 500,
@@ -339,11 +345,11 @@ function renderChart(version, data, total) {
     animationDuration: 300,
     series: [{
       type: 'bar',
-      data: [...values].reverse().map((v, i) => ({
+      data: visValues.map((v, i) => ({
         value: v,
         itemStyle: {
           borderRadius: [0, 4, 4, 0],
-          color: colors[displayData.length - 1 - i],
+          color: colors[i],
         },
       })),
       barMaxWidth: 18,
@@ -353,7 +359,7 @@ function renderChart(version, data, total) {
         show: true,
         position: 'right',
         distance: 8,
-        formatter: (p) => `${p.value.toLocaleString()} (${percentages[p.dataIndex]}%)`,
+        formatter: (p) => `${p.value.toLocaleString()} (${visPcts[p.dataIndex]}%)`,
         fontSize: labelFontSize,
         color: '#00ff41',
         textShadowColor: 'rgba(0, 255, 65, 0.5)',
