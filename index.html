@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Linux Kernel 企业贡献数据看板</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Mono+SC:wght@400;500;700&display=swap" />
 </head>
 <body>
   <div id="app">
@@ -15,19 +18,28 @@
 
     <div class="controls">
       <div class="control-group">
-        <label for="version-select">选择内核版本：</label>
-        <select id="version-select">
-          <option value="">-- 加载中 --</option>
-        </select>
+        <label for="top-n">图表显示：</label>
+        <input type="number" id="top-n" value="30" min="5" max="500" />
+        <span class="hint">条</span>
       </div>
-      <div class="control-group">
-        <label for="top-n">显示 Top：</label>
-        <input type="number" id="top-n" value="15" min="5" max="100" />
+    </div>
+
+    <div class="version-bar-wrapper">
+      <div class="version-bar-label">KERNEL_VERSIONS:</div>
+      <div class="version-bar" id="version-bar">
+        <!-- 版本标签由 JS 动态生成 -->
       </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="all">[ ALL ] 全部企业</button>
+      <button class="tab-btn" data-tab="cn">[ CN ] 中国企业</button>
     </div>
 
     <div class="dashboard">
       <div class="card chart-card">
+        <div id="chart-loading" class="chart-loading">⏳ 加载中…</div>
+        <div id="chart-empty" class="chart-empty" style="display:none;">[!] 当前版本无中国企业贡献</div>
         <div id="chart" style="width:100%;height:500px;"></div>
       </div>
       <div class="card summary-card">
@@ -38,13 +50,13 @@
               <span class="stat-label">总提交数</span>
               <span class="stat-value" id="stat-total">-</span>
             </div>
+            <div class="stat" id="stat-cn-row" style="display:none;">
+              <span class="stat-label">中国企业提交数</span>
+              <span class="stat-value" id="stat-cn-total" style="color:#ff8866;">-</span>
+            </div>
             <div class="stat">
               <span class="stat-label">企业/组织数</span>
               <span class="stat-value" id="stat-companies">-</span>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Top 1</span>
-              <span class="stat-value" id="stat-top1">-</span>
             </div>
           </div>
         </div>
@@ -53,6 +65,7 @@
 
     <div class="card table-card">
       <h2>详细数据表</h2>
+      <p class="table-hint">⓵ 完整列表: 表格内显示全部企业, 含被合并到 "Other" 的小贡献厂商</p>
       <div class="table-wrapper">
         <table id="data-table">
           <thead>
