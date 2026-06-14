@@ -87,6 +87,9 @@ export const CHINESE_COMPANIES = [
   'Huayi',
 
   // 通信
+  'China Telecom',
+  'China Mobile',
+  'China Unicom',
   'TP-Link',
   'TP-LINK',
   'FiberHome',
